@@ -33,34 +33,35 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Gradle 9.5.1
+      - name: Set up Gradle 8.13
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "9.5.1"
+          gradle-version: "8.13"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install API 37 toolchain
+      - name: Install stable Android toolchain
         shell: bash
         run: |
           set -euo pipefail
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager --install \
-            "platform-tools" \
-            "platforms;android-37" \
-            "build-tools;36.0.0"
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;35.0.0"
 
-      - name: Unpack uploaded project
+      - name: Unpack and patch uploaded project
         shell: bash
         run: |
           set -euo pipefail
           test -f BLCKSWAN_ART_NATIVE_v1.1.0.zip
+          PROJECT_DIR="$RUNNER_TEMP/blckswan-art/BLCKSWAN_ART_NATIVE"
           rm -rf "$RUNNER_TEMP/blckswan-art"
           mkdir -p "$RUNNER_TEMP/blckswan-art"
           unzip -q BLCKSWAN_ART_NATIVE_v1.1.0.zip -d "$RUNNER_TEMP/blckswan-art"
-          test -f "$RUNNER_TEMP/blckswan-art/BLCKSWAN_ART_NATIVE/settings.gradle.kts"
-          echo "PROJECT_DIR=$RUNNER_TEMP/blckswan-art/BLCKSWAN_ART_NATIVE" >> "$GITHUB_ENV"
+          test -f "$PROJECT_DIR/settings.gradle.kts"
+          sed -i 's/compileSdk = 37/compileSdk = 36/' "$PROJECT_DIR/app/build.gradle.kts"
+          sed -i 's/targetSdk = 37/targetSdk = 36/' "$PROJECT_DIR/app/build.gradle.kts"
+          sed -i 's/version "9.3.0"/version "8.13.2"/' "$PROJECT_DIR/build.gradle.kts"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Validate exhibition archive
         shell: bash
