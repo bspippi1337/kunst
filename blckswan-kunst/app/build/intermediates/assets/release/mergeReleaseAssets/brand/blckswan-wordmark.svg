@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 160" width="800" height="160" role="img" aria-label="BLCKSWAN wordmark">
+  <title>BLCKSWAN</title>
+  <defs>
+    <style>
+      .word { font-family:'Inter','Helvetica Neue','Arial',sans-serif; font-weight:800; font-size:92px; letter-spacing:-0.04em; fill:#F2F2F2; }
+      .accent { fill:#C41E3A; }
+    </style>
+  </defs>
+  <rect width="800" height="160" fill="none"/>
+  <text x="20" y="105" class="word">BLCK</text>
+  <text x="280" y="105" class="word accent">SWAN</text>
+  <rect x="20" y="120" width="340" height="3" fill="#C41E3A"/>
+  <rect x="365" y="120" width="80" height="3" fill="#C41E3A" opacity="0.4"/>
+  <rect x="450" y="120" width="20" height="3" fill="#00FF9C" opacity="0.6"/>
+</svg>

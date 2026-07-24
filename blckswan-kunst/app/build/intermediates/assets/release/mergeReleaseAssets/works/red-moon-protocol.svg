@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1800" viewBox="0 0 1200 1800">
+  <defs>
+    <radialGradient id="bg"><stop stop-color="#142019"/><stop offset="1" stop-color="#020403"/></radialGradient>
+    <radialGradient id="moon"><stop stop-color="#ff647e"/><stop offset=".45" stop-color="#e23b5a"/><stop offset="1" stop-color="#e23b5a" stop-opacity="0"/></radialGradient>
+    <linearGradient id="wing" x1="0" x2="1"><stop stop-color="#000"/><stop offset=".5" stop-color="#66f59a"/><stop offset="1" stop-color="#000"/></linearGradient>
+  </defs>
+  <rect width="1200" height="1800" fill="url(#bg)"/>
+  <circle cx="900" cy="330" r="250" fill="url(#moon)"/>
+  <g fill="none" stroke="#66f59a" stroke-opacity=".18">
+    <path d="M80 220L1120 1580M1120 220L80 1580M40 900H1160"/>
+  </g>
+  <path d="M600 950C430 590 170 610 80 1050C300 900 440 1150 600 980Z" fill="url(#wing)" opacity=".95"/>
+  <path d="M600 950C770 590 1030 610 1120 1050C900 900 760 1150 600 980Z" fill="url(#wing)" opacity=".95"/>
+  <path d="M600 980C640 760 540 610 700 430C760 365 820 390 870 420" fill="none" stroke="#66f59a" stroke-width="24"/>
+  <circle cx="795" cy="394" r="16" fill="#e23b5a"/>
+  <text x="70" y="1650" fill="#66f59a" font-family="monospace" font-size="72" font-weight="700">RED MOON PROTOCOL</text>
+  <text x="74" y="1715" fill="#b4c4ba" font-family="monospace" font-size="28">NODE-42 // RESTLESS SIGNAL</text>
+</svg>
