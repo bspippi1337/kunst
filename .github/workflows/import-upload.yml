@@ -1,50 +1,80 @@
-name: Import uploaded BLCKSWAN ART project
+name: Build BLCKSWAN ART Android app
 
 on:
   push:
+    branches: [main]
     paths:
       - "BLCKSWAN_ART_NATIVE_v1.1.0.zip"
       - ".github/workflows/import-upload.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  GRADLE_OPTS: >-
+    -Dorg.gradle.daemon=false
+    -Dorg.gradle.workers.max=2
+    -Dkotlin.compiler.execution.strategy=in-process
 
 jobs:
-  import-project:
+  build:
+    name: Build native Android APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Unpack native Android project
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle 9.5.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.5.1"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install API 37 toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-37" \
+            "build-tools;36.0.0"
+
+      - name: Unpack uploaded project
         shell: bash
         run: |
           set -euo pipefail
           test -f BLCKSWAN_ART_NATIVE_v1.1.0.zip
-          rm -rf /tmp/blckswan-art
-          mkdir -p /tmp/blckswan-art
-          unzip -q BLCKSWAN_ART_NATIVE_v1.1.0.zip -d /tmp/blckswan-art
-          test -f /tmp/blckswan-art/BLCKSWAN_ART_NATIVE/settings.gradle.kts
-          rsync -a --delete \
-            --exclude='.git/' \
-            --exclude='.github/workflows/import-upload.yml' \
-            /tmp/blckswan-art/BLCKSWAN_ART_NATIVE/ ./
-          chmod +x gradlew
-          rm -f BLCKSWAN_ART_NATIVE_v1.1.0.zip
-          rm -f .github/workflows/import-upload.yml
-          rm -rf .bootstrap bootstrap
+          rm -rf "$RUNNER_TEMP/blckswan-art"
+          mkdir -p "$RUNNER_TEMP/blckswan-art"
+          unzip -q BLCKSWAN_ART_NATIVE_v1.1.0.zip -d "$RUNNER_TEMP/blckswan-art"
+          test -f "$RUNNER_TEMP/blckswan-art/BLCKSWAN_ART_NATIVE/settings.gradle.kts"
+          echo "PROJECT_DIR=$RUNNER_TEMP/blckswan-art/BLCKSWAN_ART_NATIVE" >> "$GITHUB_ENV"
 
-      - name: Commit imported project
+      - name: Validate exhibition archive
         shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "BLCKSWAN ART importer"
-          git config user.email "actions@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "Nothing changed"
-            exit 0
-          fi
-          git commit -m "Import BLCKSWAN ART Native v1.1.0"
-          git push
+        run: python -m json.tool "$PROJECT_DIR/app/src/main/assets/exhibition.json" >/dev/null
+
+      - name: Build debug APK
+        shell: bash
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: gradle --no-daemon --max-workers=2 --stacktrace clean assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BLCKSWAN-ART-debug
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
