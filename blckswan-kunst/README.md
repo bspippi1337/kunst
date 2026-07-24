@@ -79,6 +79,15 @@ Place images under `app/src/main/assets/works/`.
 - No Material elevation shadows — hard edges or phosphor glow only
 - Monospace for titles and labels
 
+## Build (GitHub Actions)
+
+Workflow: `.github/workflows/build.yml`
+
+Triggers on push/PR to `main`, manual dispatch, and tags.
+
+Produces a release APK artifact + SHA256.  
+On tags it also creates a GitHub Release with the APK attached.
+
 ## Status
 
 MVP Spatial + Glitch ready.
@@ -93,3 +102,4 @@ Next possible layers:
 ---
 
 **BLCKSWAN** · Node-42 · Restless edition
+
