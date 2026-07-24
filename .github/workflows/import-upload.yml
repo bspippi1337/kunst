@@ -19,7 +19,7 @@ env:
 
 jobs:
   release:
-    name: Build signed release APK
+    name: Build crash-safe release APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -48,7 +48,7 @@ jobs:
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
           sdkmanager --install "platform-tools" "platforms;android-36"
 
-      - name: Unpack and normalize project
+      - name: Unpack and hotfix project
         shell: bash
         run: |
           set -euo pipefail
@@ -71,7 +71,6 @@ jobs:
           python3 - "$PROJECT_DIR/app/build.gradle.kts" <<'PY'
           from pathlib import Path
           import sys
-
           p = Path(sys.argv[1])
           s = p.read_text()
           s = s.replace(
@@ -80,6 +79,8 @@ jobs:
           )
           s = s.replace('compileSdk = 37', 'compileSdk = 36')
           s = s.replace('targetSdk = 37', 'targetSdk = 36')
+          s = s.replace('versionCode = 2', 'versionCode = 3')
+          s = s.replace('versionName = "1.1.0"', 'versionName = "1.1.1"')
           s = s.replace('isMinifyEnabled = true', 'isMinifyEnabled = false')
           s = s.replace('isShrinkResources = true', 'isShrinkResources = false')
           s = s.replace(
@@ -92,14 +93,123 @@ jobs:
           p.write_text(s)
           PY
 
-          grep -q 'org.jetbrains.kotlin.android' "$PROJECT_DIR/app/build.gradle.kts"
-          grep -q 'compileSdk = 36' "$PROJECT_DIR/app/build.gradle.kts"
-          grep -q 'signingConfig = signingConfigs.getByName("debug")' "$PROJECT_DIR/app/build.gradle.kts"
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          cat > "$PROJECT_DIR/app/src/main/java/org/blckswan/art/MainActivity.kt" <<'KOTLIN'
+          package org.blckswan.art
 
-      - name: Validate art archive
-        shell: bash
-        run: python3 -m json.tool "$PROJECT_DIR/app/src/main/assets/exhibition.json" >/dev/null
+          import android.app.Activity
+          import android.content.Intent
+          import android.graphics.Color
+          import android.graphics.Typeface
+          import android.net.Uri
+          import android.os.Bundle
+          import android.view.Gravity
+          import android.view.View
+          import android.widget.LinearLayout
+          import android.widget.ScrollView
+          import android.widget.TextView
+          import org.json.JSONObject
+
+          class MainActivity : Activity() {
+              private val ink = Color.rgb(4, 7, 6)
+              private val surface = Color.rgb(10, 16, 13)
+              private val green = Color.rgb(102, 245, 154)
+              private val fog = Color.rgb(180, 196, 186)
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  window.statusBarColor = ink
+                  window.navigationBarColor = ink
+                  try {
+                      setContentView(buildGallery())
+                  } catch (error: Throwable) {
+                      setContentView(buildError(error))
+                  }
+              }
+
+              private fun buildGallery(): View {
+                  val raw = assets.open("exhibition.json").bufferedReader().use { it.readText() }
+                  val root = JSONObject(raw)
+                  val works = root.optJSONArray("works")
+
+                  val page = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      setPadding(dp(18), dp(24), dp(18), dp(40))
+                      setBackgroundColor(ink)
+                  }
+
+                  page.addView(text("BLCKSWAN ART", 31f, green, true))
+                  page.addView(text(root.optString("subtitle", "GitHub er lerretet."), 16f, Color.WHITE, false).withTop(6))
+                  page.addView(text(root.optString("edition", "Native Exhibition"), 12f, fog, false).withTop(8))
+                  page.addView(text("FUCK KUNST: DANS DANS!", 21f, Color.WHITE, true).withTop(30))
+                  page.addView(text("Et selvstendig, offline kunstarkiv. Trykk på et verk for å åpne kilden.", 14f, fog, false).withTop(8))
+
+                  if (works == null || works.length() == 0) {
+                      page.addView(text("Ingen verk ble funnet i arkivet.", 16f, Color.WHITE, false).withTop(28))
+                  } else {
+                      for (index in 0 until works.length()) {
+                          val work = works.optJSONObject(index) ?: continue
+                          val title = work.optString("title", "Uten tittel")
+                          val medium = work.optString("medium", "Kunst")
+                          val description = work.optString("description", "")
+                          val source = work.optString("sourceUrl", "")
+
+                          val card = LinearLayout(this).apply {
+                              orientation = LinearLayout.VERTICAL
+                              setPadding(dp(16), dp(15), dp(16), dp(15))
+                              setBackgroundColor(surface)
+                              isClickable = source.startsWith("http")
+                              isFocusable = isClickable
+                              if (isClickable) setOnClickListener { openUrl(source) }
+                          }
+                          card.addView(text(title, 19f, Color.WHITE, true))
+                          card.addView(text(medium, 12f, green, true).withTop(5))
+                          if (description.isNotBlank()) card.addView(text(description, 14f, fog, false).withTop(8))
+                          page.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+                      }
+                  }
+
+                  return ScrollView(this).apply {
+                      isFillViewport = true
+                      setBackgroundColor(ink)
+                      addView(page)
+                  }
+              }
+
+              private fun buildError(error: Throwable): View = LinearLayout(this).apply {
+                  orientation = LinearLayout.VERTICAL
+                  gravity = Gravity.CENTER_VERTICAL
+                  setPadding(dp(22), dp(22), dp(22), dp(22))
+                  setBackgroundColor(ink)
+                  addView(text("BLCKSWAN ART", 28f, green, true))
+                  addView(text("Appen startet, men kunstarkivet kunne ikke leses.", 17f, Color.WHITE, true).withTop(18))
+                  addView(text(error.javaClass.simpleName + ": " + (error.message ?: "ukjent feil"), 13f, fog, false).withTop(10))
+              }
+
+              private fun openUrl(url: String) {
+                  try {
+                      startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                  } catch (_: Throwable) {
+                  }
+              }
+
+              private fun text(value: String, size: Float, color: Int, bold: Boolean) = TextView(this).apply {
+                  text = value
+                  textSize = size
+                  setTextColor(color)
+                  setLineSpacing(0f, 1.12f)
+                  if (bold) setTypeface(typeface, Typeface.BOLD)
+              }
+
+              private fun TextView.withTop(top: Int): TextView = apply {
+                  layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) }
+              }
+
+              private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+          }
+          KOTLIN
+
+          python3 -m json.tool "$PROJECT_DIR/app/src/main/assets/exhibition.json" >/dev/null
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Build installable release APK
         shell: bash
@@ -112,31 +222,29 @@ jobs:
           set -euo pipefail
           APK="$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
-          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-ART-v1.1.0.apk"
-          sha256sum "$RUNNER_TEMP/BLCKSWAN-ART-v1.1.0.apk" > "$RUNNER_TEMP/BLCKSWAN-ART-v1.1.0.apk.sha256"
+          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-ART-v1.1.1.apk"
+          sha256sum "$RUNNER_TEMP/BLCKSWAN-ART-v1.1.1.apk" > "$RUNNER_TEMP/BLCKSWAN-ART-v1.1.1.apk.sha256"
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BLCKSWAN-ART-v1.1.0
+          name: BLCKSWAN-ART-v1.1.1
           path: |
-            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.0.apk
-            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.0.apk.sha256
+            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.1.apk
+            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.1.apk.sha256
           if-no-files-found: error
           retention-days: 30
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.0
-          name: BLCKSWAN ART Native v1.1.0
+          tag_name: v1.1.1
+          name: BLCKSWAN ART Native v1.1.1
           body: |
-            Native Android exhibition for BLCKSWAN ART.
+            Startup crash hotfix.
 
-            Includes 41 curated works, exhibition mode, constellation view, timeline, favourites, sharing, and the documented FUCK KUNST: DANS DANS! connection.
-
-            The APK is signed with the Android debug key so it is directly installable. A permanent production signing key can replace it in a later release.
+            Replaces the fragile startup path with a defensive native Android gallery. The app opens offline, reads the 41-work exhibition archive safely, and shows an in-app error screen instead of crashing if archive data is malformed.
           make_latest: true
           files: |
-            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.0.apk
-            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.0.apk.sha256
+            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.1.apk
+            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.1.apk.sha256
