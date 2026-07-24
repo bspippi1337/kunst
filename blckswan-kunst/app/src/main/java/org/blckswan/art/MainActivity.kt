@@ -7,11 +7,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,13 +22,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -56,24 +54,12 @@ import androidx.compose.material.icons.rounded.ZoomIn
 import androidx.compose.material.icons.rounded.ZoomOut
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -87,7 +73,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -96,34 +81,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONObject
 
-private val Void = Color(0xFF080809)
-private val GalleryBlack = Color(0xFF101012)
-private val Raised = Color(0xFF18181B)
-private val BloodMoon = Color(0xFFD72D4B)
-private val BloodMoonSoft = Color(0xFF35151C)
-private val Bone = Color(0xFFF3F1EC)
-private val Fog = Color(0xFFAAA8A3)
-private val Hairline = Color(0xFF2A2A2E)
-private val Signal = Color(0xFF75E4B3)
+private val Ink = Color(0xFF070707)
+private val Panel = Color(0xFF131315)
+private val Line = Color(0xFF2B2B2E)
+private val Paper = Color(0xFFF2F0EA)
+private val PaperSoft = Color(0xFFE2DFD7)
+private val PaperText = Color(0xFF171718)
+private val PaperMuted = Color(0xFF5C5954)
+private val Bone = Color(0xFFF6F5F2)
+private val Fog = Color(0xFFA8A6A2)
+private val BloodMoon = Color(0xFFC51F3A)
+private val BloodMoonDark = Color(0xFF98152B)
 
-private val KunstColors = darkColorScheme(
-    primary = BloodMoon,
-    onPrimary = Color.White,
-    secondary = Bone,
-    onSecondary = Void,
-    background = Void,
-    onBackground = Bone,
-    surface = GalleryBlack,
-    onSurface = Bone,
-    surfaceVariant = Raised,
-    onSurfaceVariant = Fog,
-    outline = Hairline,
-    error = BloodMoon
-)
+private data class ArtLink(val label: String, val url: String)
 
-data class ArtLink(val label: String, val url: String)
-
-data class Work(
+private data class Work(
     val id: String,
     val title: String,
     val profile: String,
@@ -147,12 +119,12 @@ data class Work(
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = android.graphics.Color.rgb(8, 8, 9)
-        window.navigationBarColor = android.graphics.Color.rgb(8, 8, 9)
+        window.statusBarColor = android.graphics.Color.rgb(7, 7, 7)
+        window.navigationBarColor = android.graphics.Color.rgb(7, 7, 7)
 
-        val works = runCatching { loadWorks() }.getOrElse { emptyList() }
+        val works = runCatching(::loadWorks).getOrElse { emptyList() }
         setContent {
-            BlckswanKunstTheme {
+            BlckswanTheme {
                 GalleryApp(
                     works = works,
                     onOpenUrl = ::openUrl,
@@ -176,9 +148,7 @@ class MainActivity : ComponentActivity() {
                         for (linkIndex in 0 until linksJson.length()) {
                             val link = linksJson.getJSONObject(linkIndex)
                             val url = link.optString("url")
-                            if (url.isNotBlank()) {
-                                add(ArtLink(link.optString("label", "Kilde"), url))
-                            }
+                            if (url.isNotBlank()) add(ArtLink(link.optString("label", "Kilde"), url))
                         }
                     }
                 }
@@ -217,11 +187,8 @@ class MainActivity : ComponentActivity() {
         val text = buildString {
             append(work.title)
             append("\n\n")
-            append(work.meaning)
-            if (work.sourceUrl.isNotBlank()) {
-                append("\n\n")
-                append(work.sourceUrl)
-            }
+            append(work.what)
+            if (work.sourceUrl.isNotBlank()) append("\n\n${work.sourceUrl}")
         }
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
@@ -233,46 +200,45 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BlckswanKunstTheme(content: @Composable () -> Unit) {
+private fun BlckswanTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = KunstColors,
         typography = MaterialTheme.typography.copy(
             displayLarge = TextStyle(
                 fontFamily = FontFamily.SansSerif,
                 fontWeight = FontWeight.Black,
                 fontSize = 48.sp,
-                lineHeight = 48.sp,
-                letterSpacing = (-1.7).sp
+                lineHeight = 47.sp,
+                letterSpacing = (-1.8).sp
             ),
             headlineLarge = TextStyle(
                 fontFamily = FontFamily.SansSerif,
                 fontWeight = FontWeight.Black,
                 fontSize = 34.sp,
-                lineHeight = 36.sp,
-                letterSpacing = (-1.0).sp
+                lineHeight = 35.sp,
+                letterSpacing = (-1.1).sp
             ),
             headlineMedium = TextStyle(
                 fontFamily = FontFamily.SansSerif,
                 fontWeight = FontWeight.Bold,
-                fontSize = 24.sp,
-                lineHeight = 28.sp,
-                letterSpacing = (-0.4).sp
+                fontSize = 27.sp,
+                lineHeight = 29.sp,
+                letterSpacing = (-0.6).sp
             ),
             bodyLarge = TextStyle(
                 fontFamily = FontFamily.SansSerif,
                 fontSize = 17.sp,
-                lineHeight = 25.sp
+                lineHeight = 26.sp
             ),
             bodyMedium = TextStyle(
                 fontFamily = FontFamily.SansSerif,
                 fontSize = 15.sp,
-                lineHeight = 22.sp
+                lineHeight = 23.sp
             ),
             labelLarge = TextStyle(
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
-                letterSpacing = 0.6.sp
+                fontSize = 11.sp,
+                letterSpacing = 0.8.sp
             )
         ),
         content = content
@@ -290,11 +256,8 @@ private fun GalleryApp(
 
     AnimatedContent(
         targetState = selectedIndex,
-        transitionSpec = {
-            (fadeIn(tween(180)) togetherWith fadeOut(tween(120)))
-                .using(SizeTransform(clip = false))
-        },
-        label = "gallery-screen"
+        transitionSpec = { fadeIn() togetherWith fadeOut() },
+        label = "screen"
     ) { index ->
         if (index in works.indices) {
             WorkDetailScreen(
@@ -308,186 +271,80 @@ private fun GalleryApp(
                 onShare = onShare
             )
         } else {
-            GalleryScreen(
-                works = works,
-                onSelect = { selectedIndex = it }
-            )
+            GalleryScreen(works = works, onSelect = { selectedIndex = it })
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GalleryScreen(
-    works: List<Work>,
-    onSelect: (Int) -> Unit
-) {
+private fun GalleryScreen(works: List<Work>, onSelect: (Int) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
-    var chapter by rememberSaveable { mutableStateOf("Alle") }
+    var selectedChapter by rememberSaveable { mutableStateOf("Alle") }
+    var searchOpen by rememberSaveable { mutableStateOf(false) }
     val chapters = remember(works) { listOf("Alle") + works.map { it.chapter }.distinct() }
-    val filtered = remember(works, query, chapter) {
+    val filtered = remember(works, query, selectedChapter) {
         works.withIndex().filter { indexed ->
             val work = indexed.value
-            val chapterMatches = chapter == "Alle" || work.chapter == chapter
+            val chapterOk = selectedChapter == "Alle" || work.chapter == selectedChapter
             val haystack = listOf(
                 work.title, work.profile, work.repo, work.medium,
-                work.chapter, work.meaning, work.year
+                work.chapter, work.what, work.meaning, work.year
             ).joinToString(" ").lowercase()
-            chapterMatches && (query.isBlank() || haystack.contains(query.trim().lowercase()))
+            chapterOk && (query.isBlank() || haystack.contains(query.trim().lowercase()))
         }
     }
 
-    Scaffold(
-        containerColor = Void,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        SwanMark(44.dp)
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "BLCKSWAN KUNST",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Black
-                            )
-                            Text(
-                                text = "41 digitale verk",
-                                color = Fog,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontFamily = FontFamily.Monospace
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Void,
-                    titleContentColor = Bone
-                ),
-                modifier = Modifier.statusBarsPadding()
+    Surface(color = Ink, modifier = Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            GalleryTopBar(
+                searchOpen = searchOpen,
+                query = query,
+                onQueryChange = { query = it },
+                onToggleSearch = {
+                    searchOpen = !searchOpen
+                    if (!searchOpen) query = ""
+                }
             )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text(
-                    text = "Se verket først.",
-                    style = MaterialTheme.typography.headlineLarge,
-                    modifier = Modifier.padding(top = 12.dp)
-                )
-                Text(
-                    text = "Åpne et verk for å se hele flaten og få en kort forklaring på vanlig språk.",
-                    color = Fog,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)
-                )
 
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    placeholder = { Text("Søk i verk, medium eller repo") },
-                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (query.isNotBlank()) {
-                            IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Rounded.Close, contentDescription = "Tøm søk")
-                            }
-                        }
-                    },
-                    shape = RoundedCornerShape(18.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = GalleryBlack,
-                        unfocusedContainerColor = GalleryBlack,
-                        focusedBorderColor = BloodMoon,
-                        unfocusedBorderColor = Hairline,
-                        focusedTextColor = Bone,
-                        unfocusedTextColor = Bone,
-                        cursorColor = BloodMoon
-                    )
-                )
-            }
-
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(320.dp),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 42.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(chapters) { item ->
-                    FilterChip(
-                        selected = chapter == item,
-                        onClick = { chapter = item },
-                        label = { Text(item) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = GalleryBlack,
-                            labelColor = Fog,
-                            selectedContainerColor = BloodMoonSoft,
-                            selectedLabelColor = Bone
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = chapter == item,
-                            borderColor = Hairline,
-                            selectedBorderColor = BloodMoon
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    GalleryIntro()
+                }
+
+                if (works.isNotEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        FeaturedWork(
+                            work = works.first(),
+                            onClick = { onSelect(0) }
                         )
+                    }
+                }
+
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    ChapterStrip(
+                        chapters = chapters,
+                        selected = selectedChapter,
+                        onSelect = { selectedChapter = it }
                     )
                 }
-            }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 18.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(Signal)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "${filtered.size} VERK",
-                        color = Fog,
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    ResultLine(count = filtered.size)
                 }
-                Text(
-                    text = "TRYKK FOR Å ÅPNE",
-                    color = Fog.copy(alpha = 0.72f),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace
-                )
-            }
 
-            if (works.isEmpty()) {
-                EmptyArchive()
-            } else if (filtered.isEmpty()) {
-                EmptySearch()
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(320.dp),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(14.dp, 10.dp, 14.dp, 40.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
+                if (works.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) { EmptyState("Kunstarkivet kunne ikke åpnes.") }
+                } else if (filtered.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) { EmptyState("Ingen verk passer søket.") }
+                } else {
                     items(filtered, key = { it.value.id }) { indexed ->
-                        GalleryCard(
-                            work = indexed.value,
-                            onClick = { onSelect(indexed.index) }
-                        )
+                        GalleryCard(work = indexed.value, onClick = { onSelect(indexed.index) })
                     }
                 }
             }
@@ -496,30 +353,223 @@ private fun GalleryScreen(
 }
 
 @Composable
-private fun GalleryCard(work: Work, onClick: () -> Unit) {
-    Card(
+private fun GalleryTopBar(
+    searchOpen: Boolean,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onToggleSearch: () -> Unit
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = GalleryBlack),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Hairline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            .background(Ink)
+            .statusBarsPadding()
+            .border(width = 0.dp, color = Color.Transparent)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "\\$/",
+                color = BloodMoon,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Black,
+                fontSize = 25.sp,
+                letterSpacing = (-2.2).sp
+            )
+            Spacer(Modifier.width(14.dp))
+            Text(
+                text = "BLCKSWAN KUNST",
+                color = Bone,
+                fontWeight = FontWeight.Black,
+                fontSize = 14.sp,
+                letterSpacing = 1.5.sp
+            )
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = onToggleSearch) {
+                Icon(
+                    imageVector = if (searchOpen) Icons.Rounded.Close else Icons.Rounded.Search,
+                    contentDescription = if (searchOpen) "Lukk søk" else "Søk",
+                    tint = Bone
+                )
+            }
+        }
+        HorizontalDivider(color = Line)
+        if (searchOpen) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Panel)
+                    .border(1.dp, Line, RoundedCornerShape(24.dp))
+                    .padding(horizontal = 16.dp, vertical = 13.dp)
+            ) {
+                androidx.compose.foundation.text.BasicTextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    singleLine = true,
+                    textStyle = TextStyle(color = Bone, fontSize = 16.sp),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(BloodMoon),
+                    modifier = Modifier.fillMaxWidth(),
+                    decorationBox = { inner ->
+                        if (query.isBlank()) Text("Søk i 41 verk", color = Fog)
+                        inner()
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GalleryIntro() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 34.dp)
+    ) {
+        Text(
+            text = "DIGITAL KUNSTSAMLING · 2022–2026",
+            color = BloodMoon,
+            style = MaterialTheme.typography.labelLarge
+        )
+        Text(
+            text = "Kunst som lever i kode, filer og spor.",
+            color = Bone,
+            style = MaterialTheme.typography.displayLarge,
+            modifier = Modifier.padding(top = 15.dp)
+        )
+        Text(
+            text = "Se verket først. Deretter får du en kort forklaring på vanlig språk, før du kan gå dypere inn i mening, metode og kontekst.",
+            color = Fog,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 24.dp, bottom = 16.dp),
+            color = Line
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            Stat("41", "VERK")
+            Stat("4", "KAPITLER")
+            Stat("100%", "OFFLINE")
+        }
+    }
+}
+
+@Composable
+private fun Stat(value: String, label: String) {
+    Column {
+        Text(value, color = Bone, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Text(label, color = Fog, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+private fun FeaturedWork(work: Work, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 14.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(Panel)
+            .border(1.dp, Line, RoundedCornerShape(22.dp))
+            .clickable(onClick = onClick)
     ) {
         ArtPreview(
             work = work,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(250.dp)
+                .height(390.dp),
+            featured = true
         )
-        Column(Modifier.padding(18.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Column(Modifier.padding(22.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("START HER", color = BloodMoon, style = MaterialTheme.typography.labelLarge)
+                Text("01 / 41", color = BloodMoon, style = MaterialTheme.typography.labelLarge)
+            }
+            Text(
+                text = work.title,
+                color = Bone,
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(top = 14.dp)
+            )
+            Text(
+                text = work.what,
+                color = Fog,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 10.dp),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChapterStrip(chapters: List<String>, selected: String, onSelect: (String) -> Unit) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(chapters) { chapter ->
+            val active = chapter == selected
+            Surface(
+                color = if (active) Paper else Color.Transparent,
+                contentColor = if (active) PaperText else Fog,
+                shape = CircleShape,
+                border = BorderStroke(1.dp, if (active) Paper else Line),
+                modifier = Modifier.clickable { onSelect(chapter) }
             ) {
                 Text(
-                    text = work.medium.uppercase(),
+                    text = if (chapter == "Alle") "ALLE VERK" else chapter.uppercase(),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResultLine(count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text("$count VERK", color = Fog, style = MaterialTheme.typography.labelLarge)
+        Text("TRYKK FOR Å ÅPNE", color = Fog.copy(alpha = 0.72f), style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+private fun GalleryCard(work: Work, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 14.dp)
+            .clip(RoundedCornerShape(19.dp))
+            .background(Panel)
+            .border(1.dp, Line, RoundedCornerShape(19.dp))
+            .clickable(onClick = onClick)
+    ) {
+        ArtPreview(
+            work = work,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(280.dp)
+        )
+        Column(Modifier.padding(18.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    text = work.chapter.uppercase(),
                     color = BloodMoon,
                     style = MaterialTheme.typography.labelLarge,
                     maxLines = 1,
@@ -527,158 +577,113 @@ private fun GalleryCard(work: Work, onClick: () -> Unit) {
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(Modifier.width(12.dp))
-                Text(
-                    text = work.year,
-                    color = Fog,
-                    style = MaterialTheme.typography.labelLarge
-                )
+                Text(work.year, color = Fog, style = MaterialTheme.typography.labelLarge)
             }
             Text(
                 text = work.title,
+                color = Bone,
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(top = 12.dp),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = shortSummary(work.meaning),
+                text = work.what,
                 color = Fog,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = 9.dp),
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
-            HorizontalDivider(
-                modifier = Modifier.padding(top = 18.dp, bottom = 13.dp),
-                color = Hairline
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = work.chapter,
-                    color = Fog,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = "SE VERKET  →",
-                    color = Bone,
-                    style = MaterialTheme.typography.labelLarge
-                )
+            HorizontalDivider(modifier = Modifier.padding(top = 17.dp, bottom = 13.dp), color = Line)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(work.medium.uppercase(), color = Fog, style = MaterialTheme.typography.labelLarge)
+                Text("SE VERKET  ↗", color = Bone, style = MaterialTheme.typography.labelLarge)
             }
         }
     }
 }
 
 @Composable
-private fun ArtPreview(work: Work, modifier: Modifier = Modifier) {
+private fun ArtPreview(work: Work, modifier: Modifier = Modifier, featured: Boolean = false) {
     Box(
-        modifier = modifier
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF0A0A0B), Color(0xFF050506))
-                )
-            )
-            .padding(16.dp),
+        modifier = modifier.background(Color(0xFF030303)),
         contentAlignment = Alignment.Center
     ) {
         if (work.artType == "text" && work.art.isNotBlank()) {
+            val fontSize = previewFontSize(work.art, featured)
             Text(
-                text = previewArt(work.art),
+                text = previewArt(work.art, if (featured) 24 else 18),
                 color = Bone,
                 fontFamily = FontFamily.Monospace,
-                fontSize = previewFontSize(work.art),
-                lineHeight = previewFontSize(work.art) * 1.18f,
-                maxLines = 16,
+                fontSize = fontSize.sp,
+                lineHeight = (fontSize * 1.15f).sp,
+                softWrap = false,
+                maxLines = if (featured) 24 else 18,
                 overflow = TextOverflow.Clip,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.padding(16.dp)
             )
         } else {
-            RepositoryObjectPreview(work)
+            RepositoryPlate(work)
         }
-        Text(
-            text = "\\\$/",
-            color = Bone.copy(alpha = 0.13f),
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Black,
-            fontSize = 52.sp,
-            modifier = Modifier.align(Alignment.BottomEnd)
-        )
     }
 }
 
 @Composable
-private fun RepositoryObjectPreview(work: Work) {
+private fun RepositoryPlate(work: Work) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .border(1.dp, Hairline, RoundedCornerShape(16.dp))
-            .padding(18.dp),
+            .background(
+                Brush.linearGradient(
+                    listOf(Color(0xFF0C0C0D), Color(0xFF1A0E12), Color(0xFF0C0C0D))
+                )
+            )
+            .padding(22.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column(Modifier.weight(1f)) {
+                Text("DIGITALT OBJEKT", color = BloodMoon, style = MaterialTheme.typography.labelLarge)
                 Text(
-                    text = "DIGITALT OBJEKT",
-                    color = BloodMoon,
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Text(
-                    text = "${work.profile}/${work.repo}",
+                    "${work.profile}/${work.repo}",
                     color = Fog,
-                    style = MaterialTheme.typography.labelSmall,
                     fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 5.dp)
+                    modifier = Modifier.padding(top = 6.dp)
                 )
             }
             Text(
-                text = "\\\$/",
+                "\\$/",
                 color = Bone,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Black,
-                fontSize = 28.sp
+                fontSize = 28.sp,
+                letterSpacing = (-2.2).sp
             )
         }
         Column {
             Text(
-                text = work.title,
+                work.title,
                 color = Bone,
-                fontSize = 30.sp,
-                lineHeight = 31.sp,
                 fontWeight = FontWeight.Black,
+                fontSize = 31.sp,
+                lineHeight = 31.sp,
+                letterSpacing = (-0.8).sp,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = work.medium,
-                color = Fog,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            Text(work.medium, color = Fog, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 9.dp))
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(work.year, color = Fog, style = MaterialTheme.typography.labelLarge)
-            Text("REPO / SYSTEM / TEKST", color = Fog, style = MaterialTheme.typography.labelSmall)
+            Text("KILDEOBJEKT", color = Fog, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WorkDetailScreen(
     work: Work,
@@ -690,164 +695,80 @@ private fun WorkDetailScreen(
     onOpenUrl: (String) -> Unit,
     onShare: (Work) -> Unit
 ) {
-    Scaffold(
-        containerColor = Void,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "VERK ${position + 1} AV $total",
-                            color = Fog,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                        Text(
-                            text = work.title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Rounded.ArrowBack, contentDescription = "Tilbake")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { onShare(work) }) {
-                        Icon(Icons.Rounded.Share, contentDescription = "Del verket")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Void,
-                    navigationIconContentColor = Bone,
-                    actionIconContentColor = Bone,
-                    titleContentColor = Bone
-                ),
-                modifier = Modifier.statusBarsPadding()
+    Surface(color = Ink, modifier = Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            DetailTopBar(
+                work = work,
+                position = position,
+                total = total,
+                onBack = onBack,
+                onShare = { onShare(work) }
             )
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(bottom = 36.dp)
-        ) {
-            item {
-                DetailArtStage(work)
-            }
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 18.dp, vertical = 24.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = work.medium.uppercase(),
-                            color = BloodMoon,
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = work.year,
-                            color = Fog,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                    Text(
-                        text = work.title,
-                        style = MaterialTheme.typography.displayLarge,
-                        modifier = Modifier.padding(top = 15.dp)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 0.dp)
+            ) {
+                item { DetailArtStage(work) }
+                item {
+                    DetailPaper(
+                        work = work,
+                        onOpenUrl = onOpenUrl,
+                        onPrevious = onPrevious,
+                        onNext = onNext,
+                        onShare = { onShare(work) }
                     )
-                    Text(
-                        text = "${work.profile} / ${work.repo}",
-                        color = Fog,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(top = 12.dp)
-                    )
-
-                    SummaryPanel(work)
-                    ExplanationSection("DETTE SER DU", work.what)
-                    ExplanationSection("DERFOR BETYR DET NOE", work.meaning)
-                    ExplanationSection("SLIK BLE DET LAGET", work.how)
-                    ExplanationSection("LEGG MERKE TIL", work.look)
-                    ArchivePanel(work)
-
-                    if (work.sourceUrl.isNotBlank()) {
-                        Button(
-                            onClick = { onOpenUrl(work.sourceUrl) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 18.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = BloodMoon,
-                                contentColor = Color.White
-                            ),
-                            contentPadding = PaddingValues(18.dp)
-                        ) {
-                            Text("ÅPNE ORIGINALKILDEN", style = MaterialTheme.typography.labelLarge)
-                            Spacer(Modifier.width(9.dp))
-                            Icon(Icons.Rounded.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
-                        }
-                    }
-
-                    work.links.forEach { link ->
-                        TextButton(
-                            onClick = { onOpenUrl(link.url) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp),
-                            contentPadding = PaddingValues(16.dp)
-                        ) {
-                            Text(link.label.uppercase(), style = MaterialTheme.typography.labelLarge)
-                            Spacer(Modifier.width(8.dp))
-                            Icon(Icons.Rounded.OpenInNew, contentDescription = null, modifier = Modifier.size(17.dp))
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 28.dp)
-                            .border(1.dp, Hairline, RoundedCornerShape(18.dp)),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(
-                            onClick = onPrevious,
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 18.dp)
-                        ) {
-                            Icon(Icons.Rounded.ChevronLeft, contentDescription = null)
-                            Text("FORRIGE", style = MaterialTheme.typography.labelLarge)
-                        }
-                        Box(
-                            Modifier
-                                .width(1.dp)
-                                .height(34.dp)
-                                .background(Hairline)
-                        )
-                        TextButton(
-                            onClick = onNext,
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 18.dp)
-                        ) {
-                            Text("NESTE", style = MaterialTheme.typography.labelLarge)
-                            Icon(Icons.Rounded.ChevronRight, contentDescription = null)
-                        }
-                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DetailTopBar(
+    work: Work,
+    position: Int,
+    total: Int,
+    onBack: () -> Unit,
+    onShare: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Ink)
+            .statusBarsPadding()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Rounded.ArrowBack, contentDescription = "Tilbake", tint = Bone)
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    work.title,
+                    color = Bone,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    "${position + 1} / $total · ${work.chapter.uppercase()}",
+                    color = Fog,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            IconButton(onClick = onShare) {
+                Icon(Icons.Rounded.Share, contentDescription = "Del", tint = Bone)
+            }
+        }
+        HorizontalDivider(color = Line)
     }
 }
 
@@ -860,44 +781,39 @@ private fun DetailArtStage(work: Work) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF050506))
+                .heightIn(min = 420.dp, max = 590.dp)
+                .background(Color(0xFF020202))
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "ORIGINAL TEKST- / ASCII-FLATE",
-                    color = Fog,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace
-                )
+                Text("ORIGINAL TEKST- / ASCII-FLATE", color = Fog, style = MaterialTheme.typography.labelLarge)
                 Row {
-                    IconButton(onClick = { fontSize = (fontSize - 1f).coerceAtLeast(7f) }) {
-                        Icon(Icons.Rounded.ZoomOut, contentDescription = "Mindre tekst")
+                    IconButton(onClick = { fontSize = (fontSize - 1f).coerceAtLeast(5f) }) {
+                        Icon(Icons.Rounded.ZoomOut, contentDescription = "Mindre", tint = Bone)
                     }
                     IconButton(onClick = { fontSize = (fontSize + 1f).coerceAtMost(24f) }) {
-                        Icon(Icons.Rounded.ZoomIn, contentDescription = "Større tekst")
+                        Icon(Icons.Rounded.ZoomIn, contentDescription = "Større", tint = Bone)
                     }
                 }
             }
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(520.dp)
+                    .fillMaxSize()
                     .horizontalScroll(horizontal)
                     .verticalScroll(vertical)
-                    .padding(20.dp)
+                    .padding(22.dp)
             ) {
                 Text(
                     text = work.art,
                     color = Bone,
                     fontFamily = FontFamily.Monospace,
                     fontSize = fontSize.sp,
-                    lineHeight = (fontSize * 1.18f).sp,
+                    lineHeight = (fontSize * 1.16f).sp,
                     softWrap = false
                 )
             }
@@ -907,171 +823,239 @@ private fun DetailArtStage(work: Work) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(500.dp)
-                .background(Color(0xFF050506))
+                .background(Color(0xFF020202))
                 .padding(18.dp)
         ) {
-            RepositoryObjectPreview(work)
+            RepositoryPlate(work)
         }
     }
 }
 
 @Composable
-private fun SummaryPanel(work: Work) {
-    Card(
+private fun DetailPaper(
+    work: Work,
+    onOpenUrl: (String) -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onShare: () -> Unit
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 26.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = BloodMoonSoft),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BloodMoon.copy(alpha = 0.55f))
+            .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+            .background(Paper)
+            .padding(horizontal = 20.dp, vertical = 30.dp)
+            .navigationBarsPadding()
     ) {
-        Column(Modifier.padding(20.dp)) {
-            Text(
-                text = "KORT FORKLART",
-                color = BloodMoon,
-                style = MaterialTheme.typography.labelLarge
-            )
-            Text(
-                text = shortSummary(work.meaning, 2),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(top = 10.dp)
-            )
+        Text("${work.medium.uppercase()} · ${work.year}", color = BloodMoonDark, style = MaterialTheme.typography.labelLarge)
+        Text(
+            work.title,
+            color = PaperText,
+            style = MaterialTheme.typography.displayLarge,
+            modifier = Modifier.padding(top = 14.dp)
+        )
+        Text(
+            work.what,
+            color = Color(0xFF3F3D39),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+
+        Surface(
+            color = PaperSoft,
+            shape = RoundedCornerShape(17.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 28.dp)
+        ) {
+            Column(Modifier.padding(18.dp)) {
+                Text("KORT FORKLART", color = BloodMoonDark, style = MaterialTheme.typography.labelLarge)
+                Text(
+                    shortSummary(work.meaning, 2),
+                    color = PaperText,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(top = 9.dp)
+                )
+            }
+        }
+
+        PaperSection("HVA BETYR DET?", work.meaning)
+        PaperSection("HVORDAN ER DET LAGET?", work.how)
+        PaperSection("SE ETTER DETTE", work.look)
+        PaperSection(
+            "OM OBJEKTET",
+            "Publisert av ${work.profile} i ${work.repo}. ${work.provenance}. Dokumentasjon: ${work.confidence}."
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 28.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            if (work.sourceUrl.isNotBlank()) {
+                Button(
+                    onClick = { onOpenUrl(work.sourceUrl) },
+                    colors = ButtonDefaults.buttonColors(containerColor = PaperText, contentColor = Paper),
+                    shape = CircleShape,
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("ORIGINALKILDE", style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.width(7.dp))
+                    Icon(Icons.Rounded.OpenInNew, contentDescription = null, modifier = Modifier.size(17.dp))
+                }
+            }
+            Surface(
+                color = Color.Transparent,
+                contentColor = PaperText,
+                shape = CircleShape,
+                border = BorderStroke(1.dp, Color(0xFFAAA69D)),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onShare)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("DEL VERKET", style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.width(7.dp))
+                    Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(17.dp))
+                }
+            }
+        }
+
+        work.links.forEach { link ->
+            Surface(
+                color = PaperSoft,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+                    .clickable { onOpenUrl(link.url) }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(link.label, color = PaperText, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Icon(Icons.Rounded.OpenInNew, contentDescription = null, tint = PaperText)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 30.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            NavButton("FORRIGE", Icons.Rounded.ChevronLeft, onPrevious, Modifier.weight(1f))
+            NavButton("NESTE", Icons.Rounded.ChevronRight, onNext, Modifier.weight(1f), iconAfter = true)
         }
     }
 }
 
 @Composable
-private fun ExplanationSection(title: String, body: String) {
+private fun PaperSection(title: String, body: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 26.dp)
     ) {
+        HorizontalDivider(color = Color(0xFFC8C4BB))
         Text(
-            text = title,
-            color = BloodMoon,
-            style = MaterialTheme.typography.labelLarge
+            title,
+            color = BloodMoonDark,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(top = 20.dp)
         )
         Text(
-            text = body,
-            color = Bone,
+            body,
+            color = PaperMuted,
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(top = 10.dp)
+            modifier = Modifier.padding(top = 9.dp)
         )
     }
 }
 
 @Composable
-private fun ArchivePanel(work: Work) {
-    Card(
+private fun NavButton(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    iconAfter: Boolean = false
+) {
+    Surface(
+        color = PaperSoft,
+        contentColor = PaperText,
+        shape = RoundedCornerShape(14.dp),
+        modifier = modifier.clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (!iconAfter) Icon(icon, contentDescription = null)
+            if (!iconAfter) Spacer(Modifier.width(5.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge)
+            if (iconAfter) Spacer(Modifier.width(5.dp))
+            if (iconAfter) Icon(icon, contentDescription = null)
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(message: String) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 28.dp),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = GalleryBlack),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Hairline)
+            .padding(60.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(Modifier.padding(18.dp)) {
-            Text("ARKIVINFORMASJON", color = BloodMoon, style = MaterialTheme.typography.labelLarge)
-            MetadataRow("Medium", work.medium)
-            MetadataRow("Kapittel", work.chapter)
-            MetadataRow("Opphav", work.provenance)
-            MetadataRow("Dokumentasjon", work.confidence)
-            MetadataRow("Objekttype", work.visualType)
-        }
+        Text("\\$/", color = BloodMoon, fontFamily = FontFamily.Monospace, fontSize = 48.sp)
+        Text(message, color = Fog, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 14.dp))
     }
 }
 
-@Composable
-private fun MetadataRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 13.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = label,
-            color = Fog,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 12.sp,
-            modifier = Modifier.width(116.dp)
-        )
-        Text(
-            text = value,
-            color = Bone,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
-        )
+private fun previewArt(art: String, maxLines: Int): String {
+    val lines = art.lines().filterNot { it.isBlank() && art.lines().size > maxLines }
+    if (lines.size <= maxLines) return lines.joinToString("\n")
+    val start = ((lines.size - maxLines) / 2).coerceAtLeast(0)
+    return lines.drop(start).take(maxLines).joinToString("\n")
+}
+
+private fun previewFontSize(art: String, featured: Boolean): Float {
+    val maxLength = art.lineSequence().maxOfOrNull { it.length } ?: 1
+    val base = when {
+        maxLength > 130 -> 4.3f
+        maxLength > 100 -> 5.0f
+        maxLength > 76 -> 6.0f
+        maxLength > 54 -> 7.2f
+        maxLength > 36 -> 9.0f
+        else -> 12.0f
     }
+    return if (featured) base * 1.05f else base
 }
 
-@Composable
-private fun SwanMark(size: androidx.compose.ui.unit.Dp) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(RoundedCornerShape(13.dp))
-            .background(BloodMoon),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "\\\$/",
-            color = Color.White,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Black,
-            fontSize = 18.sp,
-            letterSpacing = (-1.8).sp
-        )
+private fun initialDetailFontSize(art: String): Float {
+    val maxLength = art.lineSequence().maxOfOrNull { it.length } ?: 1
+    return when {
+        maxLength > 130 -> 6f
+        maxLength > 100 -> 7f
+        maxLength > 70 -> 8f
+        maxLength > 45 -> 10f
+        else -> 13f
     }
-}
-
-@Composable
-private fun EmptyArchive() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("\\\$/", color = BloodMoon, fontSize = 56.sp, fontFamily = FontFamily.Monospace)
-            Text("Kunstarkivet kunne ikke leses", color = Bone, style = MaterialTheme.typography.headlineMedium)
-        }
-    }
-}
-
-@Composable
-private fun EmptySearch() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-            Text("INGEN TREFF", color = BloodMoon, style = MaterialTheme.typography.labelLarge)
-            Text(
-                "Prøv et annet ord eller velg Alle.",
-                color = Fog,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(top = 10.dp)
-            )
-        }
-    }
-}
-
-private fun previewArt(art: String): String {
-    val lines = art.lines().dropWhile { it.isBlank() }
-    if (lines.size <= 16) return lines.joinToString("\n")
-    val start = ((lines.size - 16) / 2).coerceAtLeast(0)
-    return lines.drop(start).take(16).joinToString("\n")
-}
-
-private fun previewFontSize(art: String) = when {
-    (art.lines().maxOfOrNull { it.length } ?: 0) > 100 -> 7.sp
-    (art.lines().maxOfOrNull { it.length } ?: 0) > 65 -> 9.sp
-    else -> 12.sp
-}
-
-private fun initialDetailFontSize(art: String): Float = when {
-    (art.lines().maxOfOrNull { it.length } ?: 0) > 120 -> 8f
-    (art.lines().maxOfOrNull { it.length } ?: 0) > 80 -> 10f
-    else -> 14f
 }
 
 private fun shortSummary(text: String, sentences: Int = 1): String {
-    val parts = text.trim().split(Regex("(?<=[.!?])\\s+"))
-    return parts.take(sentences).joinToString(" ").ifBlank { text.trim() }
+    val parts = text.split(Regex("(?<=[.!?])\\s+"))
+    return parts.take(sentences).joinToString(" ").ifBlank { text }
 }
