@@ -75,7 +75,18 @@ jobs:
 
       - name: Compile release APK
         shell: bash
-        run: gradle --no-daemon --max-workers=2 --stacktrace clean assembleRelease
+        run: |
+          set -o pipefail
+          gradle --no-daemon --max-workers=2 --stacktrace clean assembleRelease 2>&1 | tee "$RUNNER_TEMP/gradle-build.log"
+
+      - name: Upload compiler log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BLCKSWAN-KUNST-compiler-log
+          path: ${{ runner.temp }}/gradle-build.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Prepare product
         shell: bash
