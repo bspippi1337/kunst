@@ -9,25 +9,28 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val Ink = Color(0xFF040706)
-val SurfaceDeep = Color(0xFF0A100D)
-val SurfaceElevated = Color(0xFF121A16)
-val Phosphor = Color(0xFF66F59A)
-val Fog = Color(0xFFB4C4BA)
-val MoonRed = Color(0xFFE23B5A)
-val GlitchMagenta = Color(0xFFFF2D95)
+// Official BLCKSWAN Brand Kit v1.0
+val Ink = Color(0xFF0A0A0B)
+val SurfaceDeep = Color(0xFF121214)
+val SurfaceElevated = Color(0xFF1A1A1D)
+val Phosphor = Color(0xFF00FF9C)
+val Fog = Color(0xFFB8B8BC)
+val PureWhite = Color(0xFFF2F2F2)
+val MoonRed = Color(0xFFC41E3A)
+val MoonDark = Color(0xFF8B0000)
+val GlitchMagenta = Color(0xFFFF2A6D)
 
 private val BlckswanColorScheme = darkColorScheme(
-    primary = Phosphor,
-    onPrimary = Ink,
-    secondary = Fog,
+    primary = MoonRed,
+    onPrimary = PureWhite,
+    secondary = Phosphor,
     onSecondary = Ink,
     background = Ink,
-    onBackground = Color.White,
+    onBackground = PureWhite,
     surface = SurfaceDeep,
-    onSurface = Color.White,
+    onSurface = PureWhite,
     surfaceVariant = SurfaceElevated,
-    error = MoonRed
+    error = GlitchMagenta
 )
 
 @Composable
@@ -36,20 +39,22 @@ fun BlckswanTheme(content: @Composable () -> Unit) {
         colorScheme = BlckswanColorScheme,
         typography = androidx.compose.material3.Typography(
             displayLarge = TextStyle(
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.SansSerif,
+                fontWeight = FontWeight.ExtraBold,
                 fontSize = 34.sp,
-                letterSpacing = (-0.5).sp
+                letterSpacing = (-1.3).sp
             ),
             headlineMedium = TextStyle(
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold,
-                fontSize = 22.sp
+                fontFamily = FontFamily.SansSerif,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 22.sp,
+                letterSpacing = (-0.45).sp
             ),
             titleLarge = TextStyle(
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 18.sp
+                fontFamily = FontFamily.SansSerif,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                letterSpacing = (-0.25).sp
             ),
             bodyLarge = TextStyle(
                 fontFamily = FontFamily.SansSerif,
