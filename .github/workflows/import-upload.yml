@@ -1,4 +1,4 @@
-name: Build BLCKSWAN ART Android app
+name: Build and publish BLCKSWAN ART release
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   GRADLE_OPTS: >-
@@ -18,8 +18,8 @@ env:
     -Dkotlin.compiler.execution.strategy=in-process
 
 jobs:
-  build:
-    name: Build native Android APK
+  release:
+    name: Build signed release APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -41,41 +41,87 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install stable Android toolchain
+      - name: Install Android API 36
         shell: bash
         run: |
           set -euo pipefail
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platform-tools" "platforms;android-36" "build-tools;35.0.0"
+          sdkmanager --install "platform-tools" "platforms;android-36"
 
-      - name: Unpack and patch uploaded project
+      - name: Unpack and normalize project
         shell: bash
         run: |
           set -euo pipefail
           test -f BLCKSWAN_ART_NATIVE_v1.1.0.zip
-          PROJECT_DIR="$RUNNER_TEMP/blckswan-art/BLCKSWAN_ART_NATIVE"
-          rm -rf "$RUNNER_TEMP/blckswan-art"
-          mkdir -p "$RUNNER_TEMP/blckswan-art"
-          unzip -q BLCKSWAN_ART_NATIVE_v1.1.0.zip -d "$RUNNER_TEMP/blckswan-art"
+          ROOT="$RUNNER_TEMP/blckswan-art"
+          PROJECT_DIR="$ROOT/BLCKSWAN_ART_NATIVE"
+          rm -rf "$ROOT"
+          mkdir -p "$ROOT"
+          unzip -q BLCKSWAN_ART_NATIVE_v1.1.0.zip -d "$ROOT"
           test -f "$PROJECT_DIR/settings.gradle.kts"
-          sed -i 's/compileSdk = 37/compileSdk = 36/' "$PROJECT_DIR/app/build.gradle.kts"
-          sed -i 's/targetSdk = 37/targetSdk = 36/' "$PROJECT_DIR/app/build.gradle.kts"
-          sed -i 's/version "9.3.0"/version "8.13.2"/' "$PROJECT_DIR/build.gradle.kts"
+
+          cat > "$PROJECT_DIR/build.gradle.kts" <<'EOF'
+          plugins {
+              id("com.android.application") version "8.13.2" apply false
+              id("org.jetbrains.kotlin.plugin.compose") version "2.3.21" apply false
+          }
+          EOF
+
+          python3 - "$PROJECT_DIR/app/build.gradle.kts" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text()
+          s = s.replace('compileSdk = 37', 'compileSdk = 36')
+          s = s.replace('targetSdk = 37', 'targetSdk = 36')
+          s = s.replace('isMinifyEnabled = true', 'isMinifyEnabled = false')
+          s = s.replace('isShrinkResources = true', 'isShrinkResources = false')
+          s = s.replace('release {\n', 'release {\n            signingConfig = signingConfigs.getByName("debug")\n', 1)
+          p.write_text(s)
+          PY
+
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
-      - name: Validate exhibition archive
+      - name: Validate art archive
         shell: bash
-        run: python -m json.tool "$PROJECT_DIR/app/src/main/assets/exhibition.json" >/dev/null
+        run: python3 -m json.tool "$PROJECT_DIR/app/src/main/assets/exhibition.json" >/dev/null
 
-      - name: Build debug APK
+      - name: Build installable release APK
         shell: bash
         working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle --no-daemon --max-workers=2 --stacktrace clean assembleDebug
+        run: gradle --no-daemon --max-workers=2 --stacktrace clean assembleRelease
 
-      - name: Upload debug APK
+      - name: Prepare release asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$PROJECT_DIR/app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-ART-v1.1.0.apk"
+          sha256sum "$RUNNER_TEMP/BLCKSWAN-ART-v1.1.0.apk" > "$RUNNER_TEMP/BLCKSWAN-ART-v1.1.0.apk.sha256"
+
+      - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BLCKSWAN-ART-debug
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          name: BLCKSWAN-ART-v1.1.0
+          path: |
+            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.0.apk
+            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.0.apk.sha256
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.1.0
+          name: BLCKSWAN ART Native v1.1.0
+          body: |
+            Native Android exhibition for BLCKSWAN ART.
+
+            Includes 41 curated works, exhibition mode, constellation view, timeline, favourites, sharing, and the documented FUCK KUNST: DANS DANS! connection.
+
+            The APK is signed with the Android debug key so it is directly installable. A permanent production signing key can replace it in a later release.
+          make_latest: true
+          files: |
+            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.0.apk
+            ${{ runner.temp }}/BLCKSWAN-ART-v1.1.0.apk.sha256
