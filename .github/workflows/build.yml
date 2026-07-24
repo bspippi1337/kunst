@@ -31,7 +31,6 @@ jobs:
     name: Compile signed release APK
     runs-on: ubuntu-latest
     timeout-minutes: 35
-
     defaults:
       run:
         working-directory: blckswan-kunst
@@ -65,17 +64,20 @@ jobs:
           fi
           printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Validate project and brand kit
+      - name: Validate 41-work gallery archive
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m json.tool app/src/main/assets/exhibition.json >/dev/null
-          test -f app/src/main/assets/brand/blckswan-icon.svg
-          test -f app/src/main/assets/brand/blckswan-primary.svg
-          test -f app/src/main/assets/brand/blckswan-wordmark.svg
-          test -f app/src/main/res/drawable/ic_blckswan.xml
-          test -f app/src/main/java/org/blckswan/art/MainActivity.kt
-          test -f app/src/main/java/org/blckswan/art/ui/gallery/SpatialGallery.kt
+          test -s app/src/main/assets/v3.part00
+          test -s app/src/main/assets/v3.part01
+          cat app/src/main/assets/v3.part* | base64 -d > "$RUNNER_TEMP/blckswan-v3.tar.gz"
+          tar -xzf "$RUNNER_TEMP/blckswan-v3.tar.gz" -C "$RUNNER_TEMP"
+          INDEX="$RUNNER_TEMP/blckswan-kunst/app/src/main/assets/index.html"
+          test -s "$INDEX"
+          test "$(grep -o 'class=\"work-card\"' "$INDEX" | wc -l)" -eq 41
+          grep -q 'HVA SER JEG?' "$INDEX"
+          grep -q 'HVA BETYR DET?' "$INDEX"
+          grep -q 'decodeGalleryHtml' app/src/main/java/org/blckswan/art/MainActivity.kt
 
       - name: Compile release APK
         shell: bash
@@ -87,7 +89,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: BLCKSWAN-KUNST-compiler-log
+          name: BLCKSWAN-KUNST-v3-compiler-log
           path: ${{ runner.temp }}/gradle-build.log
           if-no-files-found: warn
           retention-days: 7
@@ -98,15 +100,15 @@ jobs:
           set -euo pipefail
           APK="app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
-          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-KUNST-v2.2.0.apk"
-          sha256sum "$RUNNER_TEMP/BLCKSWAN-KUNST-v2.2.0.apk" > "$RUNNER_TEMP/BLCKSWAN-KUNST-v2.2.0.apk.sha256"
+          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-KUNST-v3.0.0.apk"
+          sha256sum "$RUNNER_TEMP/BLCKSWAN-KUNST-v3.0.0.apk" > "$RUNNER_TEMP/BLCKSWAN-KUNST-v3.0.0.apk.sha256"
 
       - name: Upload finished product
         uses: actions/upload-artifact@v4
         with:
-          name: BLCKSWAN-KUNST-v2.2.0
+          name: BLCKSWAN-KUNST-v3.0.0
           path: |
-            ${{ runner.temp }}/BLCKSWAN-KUNST-v2.2.0.apk
-            ${{ runner.temp }}/BLCKSWAN-KUNST-v2.2.0.apk.sha256
+            ${{ runner.temp }}/BLCKSWAN-KUNST-v3.0.0.apk
+            ${{ runner.temp }}/BLCKSWAN-KUNST-v3.0.0.apk.sha256
           if-no-files-found: error
           retention-days: 30
