@@ -32,10 +32,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import org.blckswan.art.data.models.Exhibition
 import org.blckswan.art.data.models.Work
@@ -45,6 +46,7 @@ import org.blckswan.art.ui.theme.Fog
 import org.blckswan.art.ui.theme.Ink
 import org.blckswan.art.ui.theme.MoonRed
 import org.blckswan.art.ui.theme.Phosphor
+import org.blckswan.art.ui.theme.PureWhite
 import org.blckswan.art.ui.theme.SurfaceDeep
 import kotlin.math.absoluteValue
 
@@ -62,9 +64,8 @@ fun SpatialGallery(
 
     LaunchedEffect(exhibitionMode, works.size) {
         while (exhibitionMode && works.size > 1) {
-            delay(4800)
-            val next = (pagerState.currentPage + 1) % works.size
-            pagerState.animateScrollToPage(next)
+            delay(5200)
+            pagerState.animateScrollToPage((pagerState.currentPage + 1) % works.size)
         }
     }
 
@@ -76,8 +77,8 @@ fun SpatialGallery(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 22.dp, vertical = 24.dp)
-                .graphicsLayer { alpha = if (exhibitionMode) 0.42f else 1f }
+                .padding(horizontal = 22.dp, vertical = 20.dp)
+                .graphicsLayer { alpha = if (exhibitionMode) 0.3f else 1f }
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -85,8 +86,8 @@ fun SpatialGallery(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "BLCKSWAN // NODE-42",
-                    color = Phosphor,
+                    text = "NODE-42 // RESTLESS",
+                    color = MoonRed,
                     style = MaterialTheme.typography.labelMedium
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -104,12 +105,16 @@ fun SpatialGallery(
                     )
                 }
             }
-            Spacer(Modifier.height(18.dp))
-            Text(
-                text = exhibition.title.uppercase(),
-                style = MaterialTheme.typography.displayLarge,
-                color = Color.White,
-                letterSpacing = 1.2.sp
+
+            Spacer(Modifier.height(12.dp))
+            AsyncImage(
+                model = "file:///android_asset/brand/blckswan-primary.svg",
+                contentDescription = "BLCKSWAN",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(68.dp),
+                alpha = 0.98f
             )
             Spacer(Modifier.height(5.dp))
             Text(
@@ -120,7 +125,7 @@ fun SpatialGallery(
             Text(
                 text = exhibition.edition.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
-                color = Phosphor.copy(alpha = 0.72f)
+                color = Phosphor.copy(alpha = 0.58f)
             )
         }
 
@@ -159,7 +164,7 @@ fun SpatialGallery(
                 label = "room-scale"
             )
             val alpha by animateFloatAsState(
-                targetValue = 1f - pageOffset * if (exhibitionMode) 0.15f else 0.45f,
+                targetValue = 1f - pageOffset * if (exhibitionMode) 0.12f else 0.42f,
                 label = "room-alpha"
             )
 
@@ -184,12 +189,12 @@ fun SpatialGallery(
             Text(
                 text = works[pagerState.currentPage.coerceIn(0, works.lastIndex)].medium.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
-                color = Fog.copy(alpha = 0.68f)
+                color = Fog.copy(alpha = 0.62f)
             )
             Text(
                 text = "${pagerState.currentPage + 1} / ${works.size}",
                 style = MaterialTheme.typography.labelMedium,
-                color = Phosphor.copy(alpha = 0.78f)
+                color = Phosphor.copy(alpha = 0.72f)
             )
         }
     }
@@ -217,7 +222,7 @@ private fun WorkRoomCard(
             }
             .clip(RoundedCornerShape(if (exhibitionMode) 0.dp else 6.dp))
             .background(SurfaceDeep)
-            .workMaterial(work.visualMode, work.glitchIntensity * 0.62f)
+            .workMaterial(work.visualMode, work.glitchIntensity * 0.48f)
             .clickable(onClick = onClick)
     ) {
         ArtworkSurface(
@@ -232,7 +237,7 @@ private fun WorkRoomCard(
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.Transparent, Ink.copy(alpha = 0.92f))
+                        listOf(Color.Transparent, Ink.copy(alpha = 0.94f))
                     )
                 )
                 .padding(20.dp)
@@ -240,13 +245,13 @@ private fun WorkRoomCard(
             Text(
                 text = work.medium.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
-                color = Phosphor
+                color = MoonRed
             )
             Spacer(Modifier.height(9.dp))
             Text(
                 text = work.title,
                 style = MaterialTheme.typography.headlineMedium,
-                color = Color.White,
+                color = PureWhite,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
@@ -269,7 +274,7 @@ private fun WorkRoomCard(
                 .fillMaxHeight()
                 .background(
                     Brush.verticalGradient(
-                        listOf(Phosphor.copy(alpha = 0.9f), Color.Transparent)
+                        listOf(MoonRed.copy(alpha = 0.92f), Color.Transparent)
                     )
                 )
         )
