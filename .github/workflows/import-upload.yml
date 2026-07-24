@@ -1,0 +1,50 @@
+name: Import uploaded BLCKSWAN ART project
+
+on:
+  push:
+    paths:
+      - "BLCKSWAN_ART_NATIVE_v1.1.0.zip"
+      - ".github/workflows/import-upload.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Unpack native Android project
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f BLCKSWAN_ART_NATIVE_v1.1.0.zip
+          rm -rf /tmp/blckswan-art
+          mkdir -p /tmp/blckswan-art
+          unzip -q BLCKSWAN_ART_NATIVE_v1.1.0.zip -d /tmp/blckswan-art
+          test -f /tmp/blckswan-art/BLCKSWAN_ART_NATIVE/settings.gradle.kts
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/workflows/import-upload.yml' \
+            /tmp/blckswan-art/BLCKSWAN_ART_NATIVE/ ./
+          chmod +x gradlew
+          rm -f BLCKSWAN_ART_NATIVE_v1.1.0.zip
+          rm -f .github/workflows/import-upload.yml
+          rm -rf .bootstrap bootstrap
+
+      - name: Commit imported project
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "BLCKSWAN ART importer"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing changed"
+            exit 0
+          fi
+          git commit -m "Import BLCKSWAN ART Native v1.1.0"
+          git push
