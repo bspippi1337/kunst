@@ -1,7 +1,8 @@
-name: Import BLCKSWAN KUNST v3
+name: Build and import BLCKSWAN KUNST v3
 
 on:
-  push:
+  pull_request:
+    branches: [main]
     paths:
       - ".import-v3/**"
       - ".github/workflows/import-v3.yml"
@@ -11,10 +12,25 @@ permissions:
   contents: write
 
 jobs:
-  import:
+  import-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - uses: android-actions/setup-android@v3
+
       - name: Install finished v3 source
         shell: bash
         run: |
@@ -24,15 +40,45 @@ jobs:
           test -s blckswan-kunst/app/src/main/assets/index.html
           test "$(grep -o 'class=\"work-card\"' blckswan-kunst/app/src/main/assets/index.html | wc -l)" -eq 41
           grep -q 'file:///android_asset/index.html' blckswan-kunst/app/src/main/java/org/blckswan/art/MainActivity.kt
-          rm -rf .import-v3
-          rm -f .github/workflows/import-v3.yml
-      - name: Commit polished gallery
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager --install "platforms;android-36" "platform-tools"
+          if ! find "$ANDROID_SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d -print -quit | grep -q .; then
+            sdkmanager --install "build-tools;35.0.0"
+          fi
+          printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > blckswan-kunst/local.properties
+
+      - name: Compile signed release APK
+        working-directory: blckswan-kunst
+        shell: bash
+        run: gradle --no-daemon --max-workers=2 --stacktrace clean assembleRelease
+
+      - name: Prepare finished product
         shell: bash
         run: |
           set -euo pipefail
+          APK="blckswan-kunst/app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-KUNST-v3.0.0.apk"
+          sha256sum "$RUNNER_TEMP/BLCKSWAN-KUNST-v3.0.0.apk" > "$RUNNER_TEMP/BLCKSWAN-KUNST-v3.0.0.apk.sha256"
+
+      - name: Commit finished source to PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .import-v3
+          rm -f .github/workflows/import-v3.yml
+          rm -f blckswan-kunst/local.properties
           git config user.name "BLCKSWAN KUNST autofix"
           git config user.email "actions@users.noreply.github.com"
           git add -A
           git commit -m "Redo BLCKSWAN KUNST as a usable 41-work gallery"
-          git push
-# trigger: 2026-07-24T06:30:00+02:00
+          git push origin HEAD:${{ github.head_ref }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BLCKSWAN-KUNST-v3.0.0
+          path: |
+            ${{ runner.temp }}/BLCKSWAN-KUNST-v3.0.0.apk
+            ${{ runner.temp }}/BLCKSWAN-KUNST-v3.0.0.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
