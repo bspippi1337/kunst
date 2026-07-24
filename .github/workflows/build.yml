@@ -61,11 +61,15 @@ jobs:
         run: |
           set -euo pipefail
           if [ -d .v4-import ]; then
+            rm -rf blckswan-kunst/app/src/main/java/org/blckswan/art
             cat .v4-import/part* | base64 -d > "$RUNNER_TEMP/blckswan-v4.tar.gz"
             tar -xzf "$RUNNER_TEMP/blckswan-v4.tar.gz" -C .
+            sed -i '/import androidx.compose.foundation.layout.weight/d' \
+              blckswan-kunst/app/src/main/java/org/blckswan/art/MainActivity.kt
           fi
           test -s blckswan-kunst/app/src/main/assets/gallery_v4.json
           test -s blckswan-kunst/app/src/main/java/org/blckswan/art/MainActivity.kt
+          test "$(find blckswan-kunst/app/src/main/java/org/blckswan/art -type f | wc -l)" -eq 1
 
       - name: Install Android API 36
         shell: bash
