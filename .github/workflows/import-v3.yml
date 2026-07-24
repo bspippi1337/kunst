@@ -35,3 +35,4 @@ jobs:
           git add -A
           git commit -m "Redo BLCKSWAN KUNST as a usable 41-work gallery"
           git push
+# trigger: 2026-07-24T06:30:00+02:00
