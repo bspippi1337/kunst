@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.BlckswanKunst" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#040706</item>
+        <item name="android:navigationBarColor">#040706</item>
+        <item name="android:windowBackground">#040706</item>
+        <item name="android:colorPrimary">#66F59A</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
