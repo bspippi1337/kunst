@@ -16,9 +16,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +26,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -51,13 +52,15 @@ fun ConstellationView(
     modifier: Modifier = Modifier
 ) {
     var viewport by remember { mutableStateOf(IntSize.Zero) }
+    val density = LocalDensity.current
+    val nodeHalfPx = with(density) { 42.dp.toPx() }
     val works = exhibition.works
     val positions = remember(viewport, works.size) {
         if (viewport.width == 0 || viewport.height == 0 || works.isEmpty()) {
             emptyList()
         } else {
             works.mapIndexed { index, _ ->
-                val angle = -PI / 2 + (2 * PI * index / works.size.coerceAtLeast(1))
+                val angle = -PI / 2 + 2 * PI * index / works.size.coerceAtLeast(1)
                 val ring = if (index % 2 == 0) 0.31f else 0.4f
                 Offset(
                     x = viewport.width * 0.5f + cos(angle).toFloat() * viewport.width * ring,
@@ -88,11 +91,10 @@ fun ConstellationView(
 
             positions.forEachIndexed { index, point ->
                 if (positions.size > 1) {
-                    val next = positions[(index + 1) % positions.size]
                     drawLine(
                         color = Phosphor.copy(alpha = 0.14f),
                         start = point,
-                        end = next,
+                        end = positions[(index + 1) % positions.size],
                         strokeWidth = 1.2f
                     )
                 }
@@ -144,8 +146,8 @@ fun ConstellationView(
                 modifier = Modifier
                     .offset {
                         IntOffset(
-                            x = (point.x - 42.dp.toPx()).roundToInt(),
-                            y = (point.y - 42.dp.toPx()).roundToInt()
+                            x = (point.x - nodeHalfPx).roundToInt(),
+                            y = (point.y - nodeHalfPx).roundToInt()
                         )
                     }
                     .size(84.dp)
@@ -168,5 +170,3 @@ fun ConstellationView(
         }
     }
 }
-
-private fun androidx.compose.ui.unit.Dp.toPx(): Float = value * 3f
