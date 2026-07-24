@@ -63,6 +63,7 @@ jobs:
           cat > "$PROJECT_DIR/build.gradle.kts" <<'EOF'
           plugins {
               id("com.android.application") version "8.13.2" apply false
+              id("org.jetbrains.kotlin.android") version "2.3.21" apply false
               id("org.jetbrains.kotlin.plugin.compose") version "2.3.21" apply false
           }
           EOF
@@ -70,16 +71,30 @@ jobs:
           python3 - "$PROJECT_DIR/app/build.gradle.kts" <<'PY'
           from pathlib import Path
           import sys
+
           p = Path(sys.argv[1])
           s = p.read_text()
+          s = s.replace(
+              'id("com.android.application")\n    id("org.jetbrains.kotlin.plugin.compose")',
+              'id("com.android.application")\n    id("org.jetbrains.kotlin.android")\n    id("org.jetbrains.kotlin.plugin.compose")'
+          )
           s = s.replace('compileSdk = 37', 'compileSdk = 36')
           s = s.replace('targetSdk = 37', 'targetSdk = 36')
           s = s.replace('isMinifyEnabled = true', 'isMinifyEnabled = false')
           s = s.replace('isShrinkResources = true', 'isShrinkResources = false')
-          s = s.replace('release {\n', 'release {\n            signingConfig = signingConfigs.getByName("debug")\n', 1)
+          s = s.replace(
+              'release {\n',
+              'release {\n            signingConfig = signingConfigs.getByName("debug")\n',
+              1
+          )
+          if '\nkotlin {\n' not in s:
+              s = s.replace('\nandroid {', '\nkotlin {\n    jvmToolchain(17)\n}\n\nandroid {', 1)
           p.write_text(s)
           PY
 
+          grep -q 'org.jetbrains.kotlin.android' "$PROJECT_DIR/app/build.gradle.kts"
+          grep -q 'compileSdk = 36' "$PROJECT_DIR/app/build.gradle.kts"
+          grep -q 'signingConfig = signingConfigs.getByName("debug")' "$PROJECT_DIR/app/build.gradle.kts"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Validate art archive
