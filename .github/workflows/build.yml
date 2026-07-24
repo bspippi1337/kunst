@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: blckswan-kunst-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GRADLE_OPTS: >-
     -Dorg.gradle.daemon=false
@@ -24,7 +28,7 @@ env:
 
 jobs:
   build:
-    name: Build installable APK
+    name: Compile signed release APK
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
@@ -56,33 +60,38 @@ jobs:
           set -euo pipefail
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
           sdkmanager --install "platforms;android-36" "platform-tools"
+          if [ ! -d "$ANDROID_SDK_ROOT/build-tools/35.0.0" ]; then
+            sdkmanager --install "build-tools;35.0.0"
+          fi
           printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Validate archive
-        shell: bash
-        run: python3 -m json.tool app/src/main/assets/exhibition.json >/dev/null
-
-      - name: Build debug APK
-        shell: bash
-        run: gradle --no-daemon --max-workers=2 --stacktrace clean assembleDebug
-
-      - name: Prepare artifact
-        id: apk
+      - name: Validate project
         shell: bash
         run: |
           set -euo pipefail
-          APK="app/build/outputs/apk/debug/app-debug.apk"
-          test -f "$APK"
-          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-KUNST.apk"
-          sha256sum "$RUNNER_TEMP/BLCKSWAN-KUNST.apk" > "$RUNNER_TEMP/BLCKSWAN-KUNST.apk.sha256"
-          echo "apk=$RUNNER_TEMP/BLCKSWAN-KUNST.apk" >> "$GITHUB_OUTPUT"
+          python3 -m json.tool app/src/main/assets/exhibition.json >/dev/null
+          test -f app/src/main/java/org/blckswan/art/MainActivity.kt
+          test -f app/src/main/java/org/blckswan/art/ui/gallery/SpatialGallery.kt
 
-      - name: Upload APK
+      - name: Compile release APK
+        shell: bash
+        run: gradle --no-daemon --max-workers=2 --stacktrace clean assembleRelease
+
+      - name: Prepare product
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-KUNST-v2.1.0.apk"
+          sha256sum "$RUNNER_TEMP/BLCKSWAN-KUNST-v2.1.0.apk" > "$RUNNER_TEMP/BLCKSWAN-KUNST-v2.1.0.apk.sha256"
+
+      - name: Upload finished product
         uses: actions/upload-artifact@v4
         with:
-          name: BLCKSWAN-KUNST
+          name: BLCKSWAN-KUNST-v2.1.0
           path: |
-            ${{ runner.temp }}/BLCKSWAN-KUNST.apk
-            ${{ runner.temp }}/BLCKSWAN-KUNST.apk.sha256
+            ${{ runner.temp }}/BLCKSWAN-KUNST-v2.1.0.apk
+            ${{ runner.temp }}/BLCKSWAN-KUNST-v2.1.0.apk.sha256
           if-no-files-found: error
           retention-days: 30
