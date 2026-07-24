@@ -10,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import org.blckswan.art.data.models.Work
 import org.blckswan.art.ui.theme.Fog
@@ -35,9 +37,7 @@ fun ArtworkSurface(
     modifier: Modifier = Modifier,
     immersive: Boolean = false
 ) {
-    Box(
-        modifier = modifier.background(Ink)
-    ) {
+    Box(modifier = modifier.background(Ink)) {
         SwanSignal(
             seedText = work.id,
             intensity = work.glitchIntensity,
@@ -45,15 +45,29 @@ fun ArtworkSurface(
             modifier = Modifier.fillMaxSize()
         )
 
-        work.imageAsset?.takeIf { it.isNotBlank() }?.let { asset ->
-            AsyncImage(
-                model = "file:///android_asset/${asset.removePrefix("/")}",
-                contentDescription = work.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-                alpha = if (immersive) 0.94f else 0.86f
-            )
-        }
+        val artwork = work.imageAsset?.takeIf { it.isNotBlank() }
+        AsyncImage(
+            model = if (artwork != null) {
+                "file:///android_asset/${artwork.removePrefix("/")}"
+            } else {
+                "file:///android_asset/brand/blckswan-icon.svg"
+            },
+            contentDescription = work.title,
+            contentScale = if (artwork != null) ContentScale.Crop else ContentScale.Fit,
+            modifier = if (artwork != null) {
+                Modifier.fillMaxSize()
+            } else {
+                Modifier
+                    .fillMaxSize()
+                    .padding(if (immersive) 56.dp else 44.dp)
+            },
+            alpha = when {
+                artwork != null && immersive -> 0.95f
+                artwork != null -> 0.88f
+                immersive -> 0.9f
+                else -> 0.78f
+            }
+        )
 
         Box(
             modifier = Modifier
@@ -62,8 +76,8 @@ fun ArtworkSurface(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Ink.copy(alpha = if (immersive) 0.22f else 0.58f),
-                            Ink.copy(alpha = if (immersive) 0.72f else 0.9f)
+                            Ink.copy(alpha = if (immersive) 0.18f else 0.5f),
+                            Ink.copy(alpha = if (immersive) 0.58f else 0.88f)
                         )
                     )
                 )
@@ -99,11 +113,11 @@ private fun SwanSignal(
         drawRect(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Phosphor.copy(alpha = 0.08f + power * 0.08f),
+                    MoonRed.copy(alpha = 0.09f + power * 0.05f),
                     SurfaceDeep,
                     Ink
                 ),
-                center = Offset(size.width * 0.58f, size.height * 0.42f),
+                center = Offset(size.width * 0.62f, size.height * 0.34f),
                 radius = size.maxDimension * 0.82f
             )
         )
@@ -112,8 +126,8 @@ private fun SwanSignal(
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    MoonRed.copy(alpha = 0.8f),
-                    MoonRed.copy(alpha = 0.16f),
+                    MoonRed.copy(alpha = 0.88f),
+                    MoonRed.copy(alpha = 0.2f),
                     Color.Transparent
                 ),
                 center = Offset(size.width * 0.77f, size.height * 0.2f),
@@ -134,22 +148,22 @@ private fun SwanSignal(
             )
             previous?.let { from ->
                 drawLine(
-                    color = Phosphor.copy(alpha = 0.055f + power * 0.035f),
+                    color = Phosphor.copy(alpha = 0.035f + power * 0.025f),
                     start = from,
                     end = point,
-                    strokeWidth = 1.2f
+                    strokeWidth = 1.1f
                 )
             }
             drawCircle(
                 color = if (index % 4 == 0) MoonRed else Fog,
-                radius = if (index % 4 == 0) 3.6f else 2f,
+                radius = if (index % 4 == 0) 3.4f else 1.8f,
                 center = point,
-                alpha = 0.28f + power * 0.24f
+                alpha = 0.24f + power * 0.2f
             )
             previous = point
         }
 
-        val drift = sin(phase * Math.PI * 2).toFloat() * size.width * 0.018f
+        val drift = sin(phase * Math.PI * 2).toFloat() * size.width * 0.012f
         val centerX = size.width * 0.5f + drift
         val centerY = size.height * 0.5f
         val span = size.minDimension * if (immersive) 0.42f else 0.36f
@@ -215,7 +229,7 @@ private fun SwanSignal(
         val wingBrush = Brush.linearGradient(
             colors = listOf(
                 Color.Black.copy(alpha = 0.98f),
-                Phosphor.copy(alpha = 0.24f + power * 0.18f),
+                MoonRed.copy(alpha = 0.18f + power * 0.12f),
                 Color.Black.copy(alpha = 0.96f)
             ),
             start = Offset(centerX - span, centerY - span * 0.4f),
@@ -226,8 +240,8 @@ private fun SwanSignal(
         drawPath(rightWing, brush = wingBrush)
         drawPath(
             neck,
-            color = Phosphor.copy(alpha = 0.78f),
-            style = Stroke(width = if (immersive) 7f else 5f)
+            color = Fog.copy(alpha = 0.28f),
+            style = Stroke(width = if (immersive) 6f else 4f)
         )
         drawCircle(
             color = MoonRed,
