@@ -16,8 +16,8 @@ android {
         applicationId = "org.blckswan.art"
         minSdk = 26
         targetSdk = 36
-        versionCode = 30
-        versionName = "3.0.0"
+        versionCode = 40
+        versionName = "4.0.0"
     }
 
     buildFeatures {
@@ -64,9 +64,6 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
-
-    implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation("io.coil-kt:coil-svg:2.7.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
