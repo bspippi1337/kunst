@@ -3,14 +3,18 @@ name: Build BLCKSWAN KUNST
 on:
   push:
     branches: [main, master]
+    paths:
+      - "blckswan-kunst/**"
+      - ".github/workflows/build.yml"
   pull_request:
     branches: [main, master]
+    paths:
+      - "blckswan-kunst/**"
+      - ".github/workflows/build.yml"
   workflow_dispatch:
-  release:
-    types: [published]
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   GRADLE_OPTS: >-
@@ -20,9 +24,13 @@ env:
 
 jobs:
   build:
-    name: Assemble Release APK
+    name: Build installable APK
     runs-on: ubuntu-latest
     timeout-minutes: 35
+
+    defaults:
+      run:
+        working-directory: blckswan-kunst
 
     steps:
       - name: Checkout
@@ -34,85 +42,47 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Gradle
+      - name: Set up Gradle 8.13
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.13"
 
-      - name: Setup Android SDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install platform & build-tools
+      - name: Install Android API 36
         shell: bash
         run: |
           set -euo pipefail
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager --install \
-            "platform-tools" \
-            "platforms;android-36" \
-            "build-tools;35.0.0"
+          sdkmanager --install "platforms;android-36" "platform-tools"
+          printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Create local.properties
-        run: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-
-      - name: Make gradlew executable (if present)
-        run: |
-          if [ -f ./gradlew ]; then
-            chmod +x ./gradlew
-          fi
-
-      - name: Build release APK
+      - name: Validate archive
         shell: bash
-        run: |
-          set -euo pipefail
-          if [ -f ./gradlew ]; then
-            ./gradlew --no-daemon --max-workers=2 --stacktrace clean assembleRelease
-          else
-            gradle --no-daemon --max-workers=2 --stacktrace clean assembleRelease
-          fi
+        run: python3 -m json.tool app/src/main/assets/exhibition.json >/dev/null
 
-      - name: Locate APK
+      - name: Build debug APK
+        shell: bash
+        run: gradle --no-daemon --max-workers=2 --stacktrace clean assembleDebug
+
+      - name: Prepare artifact
         id: apk
         shell: bash
         run: |
           set -euo pipefail
-          APK=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
-          if [ -z "$APK" ]; then
-            echo "No APK found"
-            find app/build -type f | head -50
-            exit 1
-          fi
-          echo "path=$APK" >> "$GITHUB_OUTPUT"
-          echo "Found APK: $APK"
-          ls -lh "$APK"
-          sha256sum "$APK" > "$APK.sha256"
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-KUNST.apk"
+          sha256sum "$RUNNER_TEMP/BLCKSWAN-KUNST.apk" > "$RUNNER_TEMP/BLCKSWAN-KUNST.apk.sha256"
+          echo "apk=$RUNNER_TEMP/BLCKSWAN-KUNST.apk" >> "$GITHUB_OUTPUT"
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BLCKSWAN-KUNST-${{ github.sha }}
+          name: BLCKSWAN-KUNST
           path: |
-            ${{ steps.apk.outputs.path }}
-            ${{ steps.apk.outputs.path }}.sha256
+            ${{ runner.temp }}/BLCKSWAN-KUNST.apk
+            ${{ runner.temp }}/BLCKSWAN-KUNST.apk.sha256
           if-no-files-found: error
           retention-days: 30
-
-      - name: Publish GitHub Release (on tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            ${{ steps.apk.outputs.path }}
-            ${{ steps.apk.outputs.path }}.sha256
-          generate_release_notes: true
-          body: |
-            **BLCKSWAN KUNST — Spatial Exhibition Engine**
-
-            Offline-first native gallery with:
-            - Spatial horizontal pager + parallax
-            - CRT scanlines / phosphor bloom / glitch overlays
-            - Immersive fullscreen viewer
-            - Crash-safe exhibition.json loader
-
-            Install the APK and open the archive.
