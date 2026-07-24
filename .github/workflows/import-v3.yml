@@ -66,7 +66,6 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf .import-v3
-          rm -f .github/workflows/import-v3.yml
           rm -f blckswan-kunst/local.properties
           git config user.name "BLCKSWAN KUNST autofix"
           git config user.email "actions@users.noreply.github.com"
