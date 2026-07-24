@@ -12,8 +12,8 @@ android {
         applicationId = "org.blckswan.art"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10
-        versionName = "2.0.0-spatial"
+        versionCode = 11
+        versionName = "2.1.0"
     }
 
     buildFeatures {
@@ -39,6 +39,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(
@@ -60,13 +61,12 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
 
-    // Image loading
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-svg:2.7.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
