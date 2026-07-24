@@ -1,61 +1,65 @@
 {
-  "title": "BLCKSWAN ART",
-  "subtitle": "GitHub er lerretet.",
-  "edition": "Spatial Exhibition v2 · Node-42",
+  "title": "BLCKSWAN KUNST",
+  "subtitle": "GitHub er lerretet. Systemet er rommet.",
+  "edition": "Spatial Exhibition v2.1 · Node-42",
   "works": [
     {
       "id": "swan-001",
       "title": "RED MOON PROTOCOL",
-      "medium": "Generative / Glitch",
-      "description": "Swan geometry under red-moon pressure. Procedural drift and phosphor bleed.",
+      "medium": "Generativ systemkunst",
+      "description": "Svart svane-geometri under månetrykk. Et levende signal mellom kode, mørke og kontrollert sammenbrudd.",
       "sourceUrl": "https://github.com/bspippi1337",
+      "imageAsset": "works/red-moon-protocol.svg",
       "visualMode": "glitch",
-      "glitchIntensity": 0.55
+      "glitchIntensity": 0.48
     },
     {
       "id": "swan-002",
       "title": "NODE-42 BOOT SEQUENCE",
-      "medium": "System Art",
-      "description": "The moment the kernel becomes a swan. CRT residue left intentionally.",
+      "medium": "Systemkunst / boot",
+      "description": "Øyeblikket operativsystemet blir til identitet. Bootsekvensen er den første utstillingen.",
       "sourceUrl": "https://github.com/bspippi1337/blckswan-redmoon-romforge",
+      "imageAsset": "works/node-42.svg",
       "visualMode": "phosphor",
-      "glitchIntensity": 0.3
+      "glitchIntensity": 0.28
     },
     {
       "id": "swan-003",
       "title": "RESTLESS TOPOLOGY",
-      "medium": "API Cartography",
-      "description": "Every endpoint is a room. Every 404 is a closed door. Mapping as performance.",
+      "medium": "API-kartografi",
+      "description": "Hvert endepunkt er et rom. Hver 404 er en låst dør. Kartlegging som performance.",
       "sourceUrl": "https://github.com/bspippi1337/restless",
+      "imageAsset": "works/restless-topology.svg",
       "visualMode": "interactive",
-      "glitchIntensity": 0.4
+      "glitchIntensity": 0.36
     },
     {
       "id": "swan-004",
       "title": "FUCK KUNST: DANS DANS!",
-      "medium": "Manifesto",
-      "description": "Et selvstendig, offline kunstarkiv. Trykk for å åpne kilden. Ingen gallerist. Ingen filter.",
+      "medium": "Digitalt manifest",
+      "description": "Et selvstendig kunstarkiv uten portvokter. Git er lerretet. Ingen gallerist. Ingen filter.",
       "sourceUrl": "https://github.com/bspippi1337/kunst",
+      "imageAsset": "works/fuck-kunst.svg",
       "visualMode": "glitch",
-      "glitchIntensity": 0.7
+      "glitchIntensity": 0.55
     },
     {
       "id": "swan-005",
       "title": "JÆREN UNDERGRUNN",
-      "medium": "Local Signal",
-      "description": "Sandnes frequency. Low-fidelity high-intent. The black swan never migrates.",
+      "medium": "Lokalt signal",
+      "description": "Sandnes-frekvens. Lav oppløsning, høy intensjon. Den svarte svanen migrerer ikke.",
       "sourceUrl": "https://github.com/bspippi1337",
       "visualMode": "static",
-      "glitchIntensity": 0.2
+      "glitchIntensity": 0.16
     },
     {
       "id": "swan-006",
-      "title": "1337 GOD ANIMATION",
-      "medium": "Boot Art",
-      "description": "Pixel swan / golden ratio / CRT phosphor. The boot is the first exhibition.",
+      "title": "BLCKMOON ENGINE",
+      "medium": "Bootkunst / identitetsmotor",
+      "description": "Pixel-svane, terminalspor og fosforlys. Maskinen starter, men verket våkner.",
       "sourceUrl": "https://github.com/bspippi1337",
       "visualMode": "phosphor",
-      "glitchIntensity": 0.45
+      "glitchIntensity": 0.38
     }
   ]
 }
