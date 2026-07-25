@@ -16,8 +16,8 @@ android {
         applicationId = "org.blckswan.art"
         minSdk = 26
         targetSdk = 36
-        versionCode = 50
-        versionName = "5.0.0"
+        versionCode = 51
+        versionName = "5.1.0"
     }
 
     buildFeatures {
@@ -48,6 +48,16 @@ android {
             )
         }
     }
+}
+
+val syncCanonicalArt by tasks.registering(org.gradle.api.tasks.Exec::class) {
+    description = "Synchronize canonical artwork sources and renderer settings"
+    workingDir(projectDir)
+    commandLine("python3", "../ci/sync_canonical_art.py")
+}
+
+tasks.matching { it.name == "preBuild" }.configureEach {
+    dependsOn(syncCanonicalArt)
 }
 
 dependencies {
