@@ -16,8 +16,8 @@ android {
         applicationId = "org.blckswan.art"
         minSdk = 26
         targetSdk = 36
-        versionCode = 51
-        versionName = "5.1.0"
+        versionCode = 52
+        versionName = "5.2.0"
     }
 
     buildFeatures {
