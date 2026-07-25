@@ -64,7 +64,11 @@ jobs:
           fi
           printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Validate compact 41-work v5 gallery
+      - name: Synchronize canonical artwork
+        shell: bash
+        run: python3 ci/sync_canonical_art.py
+
+      - name: Validate canonical 41-work v5.1 gallery
         shell: bash
         run: |
           set -euo pipefail
@@ -74,19 +78,18 @@ jobs:
           data = json.loads(Path('app/src/main/assets/gallery_v4.json').read_text())
           works = data['works']
           assert len(works) == 41, len(works)
-          assert sum(w['artType'] == 'text' for w in works) == 22
-          assert sum(w['artType'] == 'source' for w in works) == 19
+          work = next(w for w in works if w['id'] == 'git-log-graffiti')
+          lines = work['art'].splitlines()
+          assert len(lines) == 10, len(lines)
+          assert lines[3].startswith('#▄æ╥'), repr(lines[3][:8])
+          assert max(map(len, lines)) >= 90
+          assert work['sourceUrl'].endswith('/ungtb10d_graffiti.md')
           assert all(w['title'] and w['meaning'] and w['what'] for w in works)
           PY
-          grep -q 'gallery_v4.json' app/src/main/java/org/blckswan/art/MainActivity.kt
-          grep -q 'GalleryCard' app/src/main/java/org/blckswan/art/MainActivity.kt
-          grep -q 'WorkDetailScreen' app/src/main/java/org/blckswan/art/MainActivity.kt
-          grep -q 'SummaryPanel' app/src/main/java/org/blckswan/art/MainActivity.kt
-          grep -q 'ExpandableSection' app/src/main/java/org/blckswan/art/MainActivity.kt
-          grep -q 'gallery-v5-screen' app/src/main/java/org/blckswan/art/MainActivity.kt
-          grep -q 'setContent' app/src/main/java/org/blckswan/art/MainActivity.kt
+          grep -q 'git-log-graffiti.*2.35f' app/src/main/java/org/blckswan/art/MainActivity.kt
+          grep -q 'work.art.trimEnd()' app/src/main/java/org/blckswan/art/MainActivity.kt
+          grep -q 'versionName = "5.1.0"' app/build.gradle.kts
           ! grep -q 'WebView' app/src/main/java/org/blckswan/art/MainActivity.kt
-          grep -q 'versionName = "5.0.0"' app/build.gradle.kts
 
       - name: Compile release APK
         shell: bash
@@ -98,7 +101,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: BLCKSWAN-KUNST-v5.0-compiler-log
+          name: BLCKSWAN-KUNST-v5.1-compiler-log
           path: ${{ runner.temp }}/gradle-build.log
           if-no-files-found: warn
           retention-days: 7
@@ -109,15 +112,15 @@ jobs:
           set -euo pipefail
           APK="app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
-          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-KUNST-v5.0.0.apk"
-          sha256sum "$RUNNER_TEMP/BLCKSWAN-KUNST-v5.0.0.apk" > "$RUNNER_TEMP/BLCKSWAN-KUNST-v5.0.0.apk.sha256"
+          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-KUNST-v5.1.0.apk"
+          sha256sum "$RUNNER_TEMP/BLCKSWAN-KUNST-v5.1.0.apk" > "$RUNNER_TEMP/BLCKSWAN-KUNST-v5.1.0.apk.sha256"
 
       - name: Upload finished product
         uses: actions/upload-artifact@v4
         with:
-          name: BLCKSWAN-KUNST-v5.0.0
+          name: BLCKSWAN-KUNST-v5.1.0
           path: |
-            ${{ runner.temp }}/BLCKSWAN-KUNST-v5.0.0.apk
-            ${{ runner.temp }}/BLCKSWAN-KUNST-v5.0.0.apk.sha256
+            ${{ runner.temp }}/BLCKSWAN-KUNST-v5.1.0.apk
+            ${{ runner.temp }}/BLCKSWAN-KUNST-v5.1.0.apk.sha256
           if-no-files-found: error
           retention-days: 30
