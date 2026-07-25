@@ -64,7 +64,7 @@ jobs:
           fi
           printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Validate native 41-work gallery
+      - name: Validate image-first 41-work gallery
         shell: bash
         run: |
           set -euo pipefail
@@ -79,11 +79,12 @@ jobs:
           assert all(w['title'] and w['meaning'] and w['what'] for w in works)
           PY
           grep -q 'gallery_v4.json' app/src/main/java/org/blckswan/art/MainActivity.kt
-          grep -q 'DetailPaper' app/src/main/java/org/blckswan/art/MainActivity.kt
-          grep -q 'FeaturedWork' app/src/main/java/org/blckswan/art/MainActivity.kt
+          grep -q 'ArtworkFeedCard' app/src/main/java/org/blckswan/art/MainActivity.kt
+          grep -q 'WorkExplanation' app/src/main/java/org/blckswan/art/MainActivity.kt
+          grep -q 'ExpandableExplanation' app/src/main/java/org/blckswan/art/MainActivity.kt
           grep -q 'setContent' app/src/main/java/org/blckswan/art/MainActivity.kt
           ! grep -q 'WebView' app/src/main/java/org/blckswan/art/MainActivity.kt
-          grep -q 'versionName = "4.1.0"' app/build.gradle.kts
+          grep -q 'versionName = "4.2.0"' app/build.gradle.kts
 
       - name: Compile release APK
         shell: bash
@@ -95,7 +96,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: BLCKSWAN-KUNST-v4.1-compiler-log
+          name: BLCKSWAN-KUNST-v4.2-compiler-log
           path: ${{ runner.temp }}/gradle-build.log
           if-no-files-found: warn
           retention-days: 7
@@ -106,15 +107,15 @@ jobs:
           set -euo pipefail
           APK="app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
-          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-KUNST-v4.1.0.apk"
-          sha256sum "$RUNNER_TEMP/BLCKSWAN-KUNST-v4.1.0.apk" > "$RUNNER_TEMP/BLCKSWAN-KUNST-v4.1.0.apk.sha256"
+          cp "$APK" "$RUNNER_TEMP/BLCKSWAN-KUNST-v4.2.0.apk"
+          sha256sum "$RUNNER_TEMP/BLCKSWAN-KUNST-v4.2.0.apk" > "$RUNNER_TEMP/BLCKSWAN-KUNST-v4.2.0.apk.sha256"
 
       - name: Upload finished product
         uses: actions/upload-artifact@v4
         with:
-          name: BLCKSWAN-KUNST-v4.1.0
+          name: BLCKSWAN-KUNST-v4.2.0
           path: |
-            ${{ runner.temp }}/BLCKSWAN-KUNST-v4.1.0.apk
-            ${{ runner.temp }}/BLCKSWAN-KUNST-v4.1.0.apk.sha256
+            ${{ runner.temp }}/BLCKSWAN-KUNST-v4.2.0.apk
+            ${{ runner.temp }}/BLCKSWAN-KUNST-v4.2.0.apk.sha256
           if-no-files-found: error
           retention-days: 30
